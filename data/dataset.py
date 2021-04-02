@@ -52,12 +52,17 @@ class Dataset(BaseDataset):
         grid = np.expand_dims(data["grid_encode"], axis=2)
         mask = data["mask"]
         
+        #print("image shape==================", image.shape)
+        #print("mask shape===================", mask.shape)
+        
         # extract certain classes from mask (e.g. cars)
         masks = [(mask == v) for v in self.class_values]
         mask = np.stack(masks, axis=-1).astype('float')
         
         # apply augmentations
         if self.augmentation:
+            #print("image shape=====================", image.shape)
+            #print("mask shape=======================", mask.shape)
             sample = self.augmentation(image=image, mask=mask)
             image, mask = sample['image'], sample['mask']
         
