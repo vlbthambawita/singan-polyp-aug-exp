@@ -50,22 +50,24 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--device_id", type=int, default=0, help="")
 
 # Optional parameters to identify the experiments
-parser.add_argument("--name", default="", type=str, help="A name to identify this test later")
-parser.add_argument("--py_file",default=os.path.abspath(__file__)) # store current python file
+parser.add_argument("--exp_name", type=str, help="A name to identify the experiment", required=True)
+#parser.add_argument("--py_file",default=os.path.abspath(__file__)) # store current python file
 
 
 # Directory and file handling
 parser.add_argument("--train_CSVs", 
-                    default=["/work/vajira/DL/singan-polyp-aug-exp/notebooks/REAL_fold_0.csv",
-                            "/work/vajira/DL/singan-polyp-aug-exp/notebooks/REAL_fold_1.csv"],
+                    nargs="+",
+                    default=None,
                     help="CSV file list with image and mask paths")
 
 parser.add_argument("--val_CSVs",
-                    default=["/work/vajira/DL/singan-polyp-aug-exp/notebooks/REAL_fold_2.csv"],
+                    nargs="+",
+                    default=None,
                     help="CSV file list with image and mask paths")
 
 parser.add_argument("--test_CSVs",
-                    default=["/work/vajira/DL/singan-polyp-aug-exp/notebooks/REAL_fold_2.csv"],
+                    nargs="+",
+                    default=None,
                     help="CSV file list with image and mask paths")
 
 parser.add_argument("--out_dir", 
@@ -92,6 +94,7 @@ parser.add_argument("--start_epoch", type=int, default=0, help="start epoch of t
 parser.add_argument("--num_test_samples", type=int, default=5, help="Number of samples to test.")
 
 # smp parameters
+parser.add_argument("--model", help="The model to perform segmentation", required=True)
 parser.add_argument("--encoder", type=str, default='se_resnext50_32x4d', help="smp encoders")
 parser.add_argument("--encoder_weights", type=str, default='imagenet', help="encoder weights")
 parser.add_argument("--classes", default=[0,255], help="classes per pixel")
@@ -115,9 +118,6 @@ parser.add_argument("--num_workers", type=int, default=12, help="Number of worke
 parser.add_argument("--weight_decay", type=float, default=1e-5, help="weight decay of the optimizer")
 parser.add_argument("--lr_sch_factor", type=float, default=0.1, help="Factor to reduce lr in the scheduler")
 parser.add_argument("--lr_sch_patience", type=int, default=25, help="Num of epochs to be patience for updating lr")
-
-
-
 
 
 parser.add_argument("--num_samples", type=int, default=5, help="Number of samples to print from validation set")
@@ -148,12 +148,12 @@ os.makedirs(opt.out_dir, exist_ok=True)
 
 
 # make subfolder in the output folder 
-py_file_name = opt.py_file.split("/")[-1] # Get python file name (soruce code name)
-CHECKPOINT_DIR = os.path.join(opt.out_dir, py_file_name + "/checkpoints")
+#py_file_name = opt.py_file.split("/")[-1] # Get python file name (soruce code name)
+CHECKPOINT_DIR = os.path.join(opt.out_dir, opt.exp_name + "/checkpoints")
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 
 # make tensorboard subdirectory for the experiment
-tensorboard_exp_dir = os.path.join(opt.tensorboard_dir, py_file_name)
+tensorboard_exp_dir = os.path.join(opt.tensorboard_dir, opt.exp_name)
 os.makedirs( tensorboard_exp_dir, exist_ok=True)
 
 #==========================================
@@ -260,7 +260,7 @@ def prepare_model(opt):
     # model = UNet(n_channels=4, n_classes=1) # 4 = 3 channels + 1 grid encode
 
     # create segmentation model with pretrained encoder
-    model = smp.UnetPlusPlus(
+    model = getattr(smp, opt.model)(
         encoder_name=opt.encoder,
         in_channels=opt.in_channels, 
         encoder_weights=opt.encoder_weights, 
@@ -408,7 +408,7 @@ def check_test_score(opt):
 
     logs = test_epoch.run(test_dataloader)
     print("logs=", str(logs))
-    writer.add_text(f"{opt.py_file}-test-score", str(logs), global_step=test_best_epoch)
+    writer.add_text(f"{opt.exp_name}-test-score", str(logs), global_step=test_best_epoch)
 
     # Testing with only class layer 1 (polyps)
     loss = smp.utils.losses.DiceLoss(ignore_channels=[0])
@@ -426,7 +426,7 @@ def check_test_score(opt):
 
     logs = test_epoch.run(test_dataloader)
     print("logs=", str(logs))
-    writer.add_text(f"{opt.py_file}-test-score-ignore-channel-0", str(logs), global_step=test_best_epoch)
+    writer.add_text(f"{opt.exp_name}-test-score-ignore-channel-0", str(logs), global_step=test_best_epoch)
 
 
 
@@ -447,7 +447,7 @@ def check_test_score(opt):
 
     logs = test_epoch.run(test_dataloader)
     print("logs=", str(logs))
-    writer.add_text(f"{opt.py_file}-test-score-ignore-channel-1", str(logs), global_step=test_best_epoch)
+    writer.add_text(f"{opt.exp_name}-test-score-ignore-channel-1", str(logs), global_step=test_best_epoch)
 
 
 
@@ -493,7 +493,7 @@ def check_val_full_score(opt):
 
     logs = test_epoch.run(test_dataloader)
     print("logs=", str(logs))
-    writer.add_text(f"{opt.py_file}-scores-->{opt.record_name}", str(logs), global_step=test_best_epoch)
+    writer.add_text(f"{opt.exp_name}-scores-->{opt.record_name}", str(logs), global_step=test_best_epoch)
 
     # Testing with only class layer 1 (polyps)
     loss = smp.utils.losses.DiceLoss(ignore_channels=[0])
@@ -516,7 +516,7 @@ def check_val_full_score(opt):
 
     logs = test_epoch.run(test_dataloader)
     print("logs=", str(logs))
-    writer.add_text(f"{opt.py_file}-val-scores-ignore-channel-0-->{opt.record_name}", str(logs), global_step=test_best_epoch)
+    writer.add_text(f"{opt.exp_name}-val-scores-ignore-channel-0-->{opt.record_name}", str(logs), global_step=test_best_epoch)
 
 
 
@@ -541,7 +541,7 @@ def check_val_full_score(opt):
 
     logs = test_epoch.run(test_dataloader)
     print("logs=", str(logs))
-    writer.add_text(f"{opt.py_file}-val-scores-ignore-channel-1-->{opt.record_name}", str(logs), global_step=test_best_epoch) 
+    writer.add_text(f"{opt.exp_name}-val-scores-ignore-channel-1-->{opt.record_name}", str(logs), global_step=test_best_epoch) 
 
 
 

@@ -83,6 +83,8 @@ parser.add_argument("--test_out_dir",
 
 parser.add_argument("--best_checkpoint_name", type=str, default="best_checkpoint.pth", help="A name to save bet checkpoint")
 
+parser.add_argument("--img_size", type=int, default=128, help="Image height and width to resize")
+
 
 # Action handling 
 parser.add_argument("--num_epochs", type=int, default=1, help="Numbe of epochs to train")
@@ -113,9 +115,6 @@ parser.add_argument("--num_workers", type=int, default=12, help="Number of worke
 parser.add_argument("--weight_decay", type=float, default=1e-5, help="weight decay of the optimizer")
 parser.add_argument("--lr_sch_factor", type=float, default=0.1, help="Factor to reduce lr in the scheduler")
 parser.add_argument("--lr_sch_patience", type=int, default=25, help="Num of epochs to be patience for updating lr")
-
-
-
 
 
 parser.add_argument("--num_samples", type=int, default=5, help="Number of samples to print from validation set")

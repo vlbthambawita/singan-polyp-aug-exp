@@ -18,15 +18,15 @@ def df_from_csv_file_array(csv_file_arrya):
 
 
 
-def get_training_augmentation():
+def get_training_augmentation(opt):
     train_transform = [
 
         albu.HorizontalFlip(p=0.5),
 
         albu.ShiftScaleRotate(scale_limit=0.5, rotate_limit=0, shift_limit=0.1, p=1, border_mode=0),
 
-        albu.PadIfNeeded(min_height=256, min_width=256, always_apply=True, border_mode=0),
-        albu.Resize(height=256, width=256, always_apply=True),
+        albu.PadIfNeeded(min_height=opt.img_size, min_width=opt.img_size, always_apply=True, border_mode=0),
+        albu.Resize(height=opt.img_size, width=opt.img_size, always_apply=True),
 
         albu.IAAAdditiveGaussianNoise(p=0.2),
         albu.IAAPerspective(p=0.5),
@@ -61,11 +61,11 @@ def get_training_augmentation():
 
 
 
-def get_validation_augmentation():
+def get_validation_augmentation(opt):
     """Add paddings to make image shape divisible by 32"""
     test_transform = [
-        albu.PadIfNeeded(min_height=256, min_width=256, always_apply=True, border_mode=0),
-        albu.Resize(height=256, width=256, always_apply=True),
+        albu.PadIfNeeded(min_height=opt.img_size, min_width=opt.img_size, always_apply=True, border_mode=0),
+        albu.Resize(height=opt.img_size, width=opt.img_size, always_apply=True),
     ]
     return albu.Compose(test_transform)
 
@@ -108,7 +108,7 @@ def prepare_data(opt, preprocessing_fn):
     train_dataset = Dataset(
         train_df,
         grid_sizes=opt.grid_sizes_train,
-        augmentation=get_training_augmentation(), 
+        augmentation=get_training_augmentation(opt), 
         preprocessing=get_preprocessing(preprocessing_fn),
         classes=opt.classes,
         pyra = opt.pyra
@@ -117,7 +117,7 @@ def prepare_data(opt, preprocessing_fn):
     valid_dataset = Dataset(
         val_df, 
         grid_sizes=opt.grid_sizes_val,
-        augmentation=get_validation_augmentation(), 
+        augmentation=get_validation_augmentation(opt), 
         preprocessing=get_preprocessing(preprocessing_fn),
         classes=opt.classes,
         pyra = opt.pyra
@@ -141,7 +141,7 @@ def prepare_test_data(opt, preprocessing_fn):
     test_dataset = Dataset(
         test_df,
         grid_sizes=opt.grid_sizes_test,
-        augmentation=get_validation_augmentation(), 
+        augmentation=get_validation_augmentation(opt), 
         preprocessing=get_preprocessing(preprocessing_fn),
         classes=opt.classes,
         pyra = opt.pyra
