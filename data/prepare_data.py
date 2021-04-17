@@ -3,16 +3,16 @@ import pandas as pd
 import albumentations as albu
 from torch.utils.data import DataLoader
 
-from data.dataset import Dataset
+from data.dataset import Dataset as Dataset
 
 def df_from_csv_file_array(csv_file_arrya):
 
-    df =pd.DataFrame(columns=["image", "path"])
+    df =pd.DataFrame(columns=["image_path", "mask_path"])
 
     for csv in csv_file_arrya:
         temp_df = pd.read_csv(csv)
 
-        df = df.append(temp_df)
+        df = df.append(temp_df, ignore_index=True)
 
     return df
 
