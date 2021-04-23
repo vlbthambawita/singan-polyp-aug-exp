@@ -1,24 +1,23 @@
 #!/bin/sh
-#!/bin/sh
 
 
-exp_name="FAKE_5_UNETPlusPlus_128_ST" 
+exp_name="FAKE_4_UNETPlusPlus_128_ST_1to1000" 
 
 num_epochs=300
 
-gpuID=1
+gpuID=0
 
 model="UnetPlusPlus"
 
-train_csvs_fold_0="/work/vajira/DL/singan-polyp-aug-exp/notebooks/FAKE_scale_0_num_img_5_ST_fold_1.csv /work/vajira/DL/singan-polyp-aug-exp/notebooks/FAKE_scale_0_num_img_5_ST_fold_2.csv"
+train_csvs_fold_0="/work/vajira/DL/singan-polyp-aug-exp/notebooks/FAKE_scale_0_num_img_4_ST_1to1000_fold_1.csv /work/vajira/DL/singan-polyp-aug-exp/notebooks/FAKE_scale_0_num_img_4_ST_1to1000_fold_2.csv"
 val_csvs_fold_0="/work/vajira/DL/singan-polyp-aug-exp/notebooks/REAL_fold_0.csv"
 test_csvs_fold_0="/work/vajira/DL/singan-polyp-aug-exp/notebooks/REAL_fold_0.csv"
 
-train_csvs_fold_1="/work/vajira/DL/singan-polyp-aug-exp/notebooks/FAKE_scale_0_num_img_5_ST_fold_0.csv /work/vajira/DL/singan-polyp-aug-exp/notebooks/FAKE_scale_0_num_img_5_ST_fold_2.csv"
+train_csvs_fold_1="/work/vajira/DL/singan-polyp-aug-exp/notebooks/FAKE_scale_0_num_img_4_ST_1to1000_fold_0.csv /work/vajira/DL/singan-polyp-aug-exp/notebooks/FAKE_scale_0_num_img_4_ST_1to1000_fold_2.csv"
 val_csvs_fold_1="/work/vajira/DL/singan-polyp-aug-exp/notebooks/REAL_fold_1.csv"
 test_csvs_fold_1="/work/vajira/DL/singan-polyp-aug-exp/notebooks/REAL_fold_1.csv"
 
-train_csvs_fold_2="/work/vajira/DL/singan-polyp-aug-exp/notebooks/FAKE_scale_0_num_img_5_ST_fold_0.csv /work/vajira/DL/singan-polyp-aug-exp/notebooks/FAKE_scale_0_num_img_5_ST_fold_1.csv"
+train_csvs_fold_2="/work/vajira/DL/singan-polyp-aug-exp/notebooks/FAKE_scale_0_num_img_4_ST_1to1000_fold_0.csv /work/vajira/DL/singan-polyp-aug-exp/notebooks/FAKE_scale_0_num_img_4_ST_1to1000_fold_1.csv"
 val_csvs_fold_2="/work/vajira/DL/singan-polyp-aug-exp/notebooks/REAL_fold_2.csv"
 test_csvs_fold_2="/work/vajira/DL/singan-polyp-aug-exp/notebooks/REAL_fold_2.csv"
 

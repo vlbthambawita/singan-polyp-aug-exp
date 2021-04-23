@@ -1,0 +1,2 @@
+bash 777_111_FAKE_1_UNETPlusPlus_train_test_new_mimir_ST_1to1000.sh
+bash 777_111_FAKE_4_UNETPlusPlus_train_test_new_mimir_ST_1to1000.sh
