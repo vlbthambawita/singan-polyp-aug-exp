@@ -127,6 +127,7 @@ parser.add_argument("--checkpoint_interval", type=int, default=25, help="Interva
 #parser.add_argument("--num_test", default= 200, type=int, help="Number of samples to test set from 1k dataset")
 #parser.add_argument("--model_path", default="", help="Model path to load weights")
 #parser.add_argument("--num_of_samples", default=30, type=int, help="Number of samples to validate (Montecalo sampling)")
+parser.add_argument("--record_name", type=str, default="VAL", help="Some name to identify records in tensorboard output")
 
 opt = parser.parse_args()
 
@@ -457,7 +458,7 @@ def check_val_full_score(opt):
 
     #opt.test_CSVs = opt.val_CSVs
 
-    opt.record_name = "VAL"
+    #opt.record_name = "VAL"
 
     checkpoint_dict = torch.load(os.path.join(CHECKPOINT_DIR, opt.best_checkpoint_name))
 

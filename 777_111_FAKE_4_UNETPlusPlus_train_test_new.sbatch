@@ -7,7 +7,7 @@ export OMP_NUM_THREADS=4      # GCC, C-LANG, GMP etc.
 export MKL_NUM_THREADS=4      # Intel MKL and VML
 export NUMEXPR_NUM_THREADS=4  # Intel MKL and VML
 
-exp_name="FAKE_4_UNETPlusPlus_128" 
+exp_name="FAKE_4_UNETPlusPlus_128_corrected_sbatch" 
 
 num_epochs=300
 
@@ -32,11 +32,11 @@ exp_name_fold_2="{$exp_name}_fold_2"
 
 
 
-srun python 777_all_in_one_v1.py train --exp_name $exp_name_fold_0 --num_epochs $num_epochs --train_CSVs $train_csvs_fold_0 --val_CSVs $val_csvs_fold_0 --model $model --test_CSVs $test_csvs_fold_0
-srun python 777_all_in_one_v1.py check_val --exp_name $exp_name_fold_0 --test_CSVs $test_csvs_fold_0 --model $model
+#srun python 777_all_in_one_v1.py train --exp_name $exp_name_fold_0 --num_epochs $num_epochs --train_CSVs $train_csvs_fold_0 --val_CSVs $val_csvs_fold_0 --model $model --test_CSVs $test_csvs_fold_0
+#srun python 777_all_in_one_v1.py check_val --exp_name $exp_name_fold_0 --test_CSVs $test_csvs_fold_0 --model $model
 
-srun python 777_all_in_one_v1.py train --exp_name $exp_name_fold_1 --num_epochs $num_epochs --train_CSVs $train_csvs_fold_1 --val_CSVs $val_csvs_fold_1 --model $model --test_CSVs $test_csvs_fold_1
-srun python 777_all_in_one_v1.py check_val --exp_name $exp_name_fold_1 --test_CSVs $test_csvs_fold_1 --model $model
+#srun python 777_all_in_one_v1.py train --exp_name $exp_name_fold_1 --num_epochs $num_epochs --train_CSVs $train_csvs_fold_1 --val_CSVs $val_csvs_fold_1 --model $model --test_CSVs $test_csvs_fold_1
+#srun python 777_all_in_one_v1.py check_val --exp_name $exp_name_fold_1 --test_CSVs $test_csvs_fold_1 --model $model
 
 srun python 777_all_in_one_v1.py train --exp_name $exp_name_fold_2 --num_epochs $num_epochs --train_CSVs $train_csvs_fold_2 --val_CSVs $val_csvs_fold_2 --model $model --test_CSVs $test_csvs_fold_2
 srun python 777_all_in_one_v1.py check_val --exp_name $exp_name_fold_2 --test_CSVs $test_csvs_fold_2 --model $model
