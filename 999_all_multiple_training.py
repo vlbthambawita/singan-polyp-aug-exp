@@ -30,7 +30,7 @@ import segmentation_models_pytorch as smp
 
 
 from data.dataset import Dataset
-from data.prepare_data import prepare_data, prepare_test_data
+from data.prepare_data import  prepare_test_data, prepare_data_multi
 #from data import PolypsDatasetWithGridEncoding
 #from data import PolypsDatasetWithGridEncoding_TestData
 import pyra_pytorch as pyra
@@ -59,6 +59,13 @@ parser.add_argument("--train_CSVs",
                     nargs="+",
                     default=None,
                     help="CSV file list with image and mask paths")
+
+parser.add_argument("--train_amounts",
+                    nargs="+",
+                    default=None,
+                    help="Amout of images to use for training."
+                    
+                    )
 
 parser.add_argument("--val_CSVs",
                     nargs="+",
@@ -108,7 +115,7 @@ parser.add_argument("--grid_sizes_test", type=list, default=[256], help="Grid si
 parser.add_argument("--in_channels", type=int, default=3, help="Number of input channgels")
 
 # Parameters
-parser.add_argument("--bs", type=int, default=8, help="Mini batch size")
+parser.add_argument("--bs", type=int, default=2, help="Mini batch size")
 parser.add_argument("--val_bs", type=int, default=1, help="Batch size")
 parser.add_argument("--lr", type=float, default=0.0001, help="Learning rate for training")
 parser.add_argument("--lr_change_point", type=int, default=50, help="After this point LR will be changed.")
@@ -121,7 +128,7 @@ parser.add_argument("--lr_sch_patience", type=int, default=25, help="Num of epoc
 
 
 parser.add_argument("--num_samples", type=int, default=5, help="Number of samples to print from validation set")
-parser.add_argument("action", type=str, help="Select an action to run", choices=["train", "retrain", "test", "check", "check_val"])
+parser.add_argument("action", type=str, help="Select an action to run", choices=["train", "retrain", "test", "check", "check_val", "train_multi", "check_val_multi"])
 parser.add_argument("--checkpoint_interval", type=int, default=25, help="Interval to save checkpoint models")
 #parser.add_argument("--fold", type=str, default="fold_1", help="Select the validation fold", choices=["fold_1", "fold_2", "fold_3"])
 #parser.add_argument("--num_test", default= 200, type=int, help="Number of samples to test set from 1k dataset")
@@ -140,28 +147,42 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 opt.device = DEVICE
 
-#===========================================
-# Folder handling
-#===========================================
 
 #make output folder if not exist
 os.makedirs(opt.out_dir, exist_ok=True)
 
+#===========================================
+# Folder handling
+#===========================================
+
+def init_experiment(opt):
+
+    opt.checkpoint_dir = os.path.join(opt.out_dir, opt.exp_name_sub + "/checkpoints")
+    os.makedirs(opt.checkpoint_dir, exist_ok=True)
+
+    tensorboard_exp_dir = os.path.join(opt.tensorboard_dir, opt.exp_name_sub)
+    os.makedirs( tensorboard_exp_dir, exist_ok=True)
+
+    opt.writer = SummaryWriter(tensorboard_exp_dir)
+
+
+
+
+
+
 
 # make subfolder in the output folder 
 #py_file_name = opt.py_file.split("/")[-1] # Get python file name (soruce code name)
-CHECKPOINT_DIR = os.path.join(opt.out_dir, opt.exp_name + "/checkpoints")
-os.makedirs(CHECKPOINT_DIR, exist_ok=True)
+
 
 # make tensorboard subdirectory for the experiment
-tensorboard_exp_dir = os.path.join(opt.tensorboard_dir, opt.exp_name)
-os.makedirs( tensorboard_exp_dir, exist_ok=True)
+
 
 #==========================================
 # Tensorboard
 #==========================================
 # Initialize summary writer
-writer = SummaryWriter(tensorboard_exp_dir)
+
 
 #==========================================
 # Prepare Data
@@ -196,7 +217,7 @@ def train_model(train_loader, valid_loader, model, loss, metrics, optimizer, opt
 
     max_score = 0
 
-    best_chk_path = os.path.join(CHECKPOINT_DIR, opt.best_checkpoint_name)
+    best_chk_path = os.path.join(opt.checkpoint_dir, opt.best_checkpoint_name)
 
     for i in range(opt.start_epoch + 1, opt.start_epoch + opt.num_epochs +1 ):
         
@@ -220,10 +241,10 @@ def train_model(train_loader, valid_loader, model, loss, metrics, optimizer, opt
 
         # writing to logs to tensorboard
         for key, value in train_logs.items():
-            writer.add_scalar(f"Train/{key}", value, i)
+            opt.writer.add_scalar(f"Train/{key}", value, i)
 
         for key, value in valid_logs.items():
-            writer.add_scalar(f"Valid/{key}", value, i)
+            opt.writer.add_scalar(f"Valid/{key}", value, i)
 
 
     
@@ -279,7 +300,7 @@ def run_train(opt):
 
     preprocessing_fn = smp.encoders.get_preprocessing_fn(opt.encoder, opt.encoder_weights)
 
-    train_loader, val_loader = prepare_data(opt, preprocessing_fn=None)
+    train_loader, val_loader = prepare_data_multi(opt, preprocessing_fn=None)
 
     loss = smp.utils.losses.DiceLoss(ignore_channels=[0])
 
@@ -292,12 +313,29 @@ def run_train(opt):
     ])
 
     train_model(train_loader, val_loader, model, loss, metrics, optimizer, opt)
+
+def run_train_multi(opt):
+
+    for train_amount in opt.train_amounts:
+
+        opt.train_amount = int(train_amount)
+        opt.exp_name_sub = "{}_{}".format(str(opt.exp_name), train_amount)   
+
+        init_experiment(opt)
+
+
+        run_train(opt)
+
+
+    
+
+
 #====================================
 # Re-train process
 #====================================
 def run_retrain(opt):
 
-    checkpoint_dict = torch.load(os.path.join(CHECKPOINT_DIR, opt.best_checkpoint_name))
+    checkpoint_dict = torch.load(os.path.join(opt.checkpoint_dir, opt.best_checkpoint_name))
 
     opt.start_epoch =  checkpoint_dict["epoch"]
     model = checkpoint_dict["model"]
@@ -335,7 +373,7 @@ def check_model_graph():
 def do_test(opt):
 
 
-    checkpoint_dict = torch.load(os.path.join(CHECKPOINT_DIR, opt.best_checkpoint_name))
+    checkpoint_dict = torch.load(os.path.join(opt.checkpoint_dir, opt.best_checkpoint_name))
 
     test_epoch =  checkpoint_dict["epoch"]
     best_model = checkpoint_dict["model"]
@@ -369,7 +407,7 @@ def do_test(opt):
         )
 
         fig.savefig(f"./test_202_{i}.png")
-        writer.add_figure(f"Test_sample/sample-{i}", fig, global_step=test_epoch)
+        opt.writer.add_figure(f"Test_sample/sample-{i}", fig, global_step=test_epoch)
 
 
 
@@ -379,7 +417,7 @@ def check_test_score(opt):
 
     
 
-    checkpoint_dict = torch.load(os.path.join(CHECKPOINT_DIR, opt.best_checkpoint_name))
+    checkpoint_dict = torch.load(os.path.join(opt.checkpoint_dir, opt.best_checkpoint_name))
 
     test_best_epoch =  checkpoint_dict["epoch"]
     best_model = checkpoint_dict["model"]
@@ -409,7 +447,7 @@ def check_test_score(opt):
 
     logs = test_epoch.run(test_dataloader)
     print("logs=", str(logs))
-    writer.add_text(f"{opt.exp_name}-test-score", str(logs), global_step=test_best_epoch)
+    opt.writer.add_text(f"{opt.exp_name_sub}-test-score", str(logs), global_step=test_best_epoch)
 
     # Testing with only class layer 1 (polyps)
     loss = smp.utils.losses.DiceLoss(ignore_channels=[0])
@@ -427,7 +465,7 @@ def check_test_score(opt):
 
     logs = test_epoch.run(test_dataloader)
     print("logs=", str(logs))
-    writer.add_text(f"{opt.exp_name}-test-score-ignore-channel-0", str(logs), global_step=test_best_epoch)
+    opt.writer.add_text(f"{opt.exp_name_sub}-test-score-ignore-channel-0", str(logs), global_step=test_best_epoch)
 
 
 
@@ -448,7 +486,7 @@ def check_test_score(opt):
 
     logs = test_epoch.run(test_dataloader)
     print("logs=", str(logs))
-    writer.add_text(f"{opt.exp_name}-test-score-ignore-channel-1", str(logs), global_step=test_best_epoch)
+    opt.writer.add_text(f"{opt.exp_name_sub}-test-score-ignore-channel-1", str(logs), global_step=test_best_epoch)
 
 
 
@@ -460,7 +498,7 @@ def check_val_full_score(opt):
 
     #opt.record_name = "VAL"
 
-    checkpoint_dict = torch.load(os.path.join(CHECKPOINT_DIR, opt.best_checkpoint_name))
+    checkpoint_dict = torch.load(os.path.join(opt.checkpoint_dir, opt.best_checkpoint_name))
 
     test_best_epoch =  checkpoint_dict["epoch"]
     best_model = checkpoint_dict["model"]
@@ -474,6 +512,7 @@ def check_val_full_score(opt):
     
     test_dataloader = DataLoader(test_dataset, num_workers=12)
 
+    '''
     loss = smp.utils.losses.DiceLoss()
     # Testing with two class layers
     metrics = [
@@ -494,8 +533,8 @@ def check_val_full_score(opt):
 
     logs = test_epoch.run(test_dataloader)
     print("logs=", str(logs))
-    writer.add_text(f"{opt.exp_name}-scores-->{opt.record_name}", str(logs), global_step=test_best_epoch)
-
+    opt.writer.add_text(f"{opt.exp_name_sub}-scores-->{opt.record_name}", str(logs), global_step=test_best_epoch)
+'''
     # Testing with only class layer 1 (polyps)
     loss = smp.utils.losses.DiceLoss(ignore_channels=[0])
     
@@ -517,12 +556,12 @@ def check_val_full_score(opt):
 
     logs = test_epoch.run(test_dataloader)
     print("logs=", str(logs))
-    writer.add_text(f"{opt.exp_name}-val-scores-ignore-channel-0-->{opt.record_name}", str(logs), global_step=test_best_epoch)
+    opt.writer.add_text(f"{opt.exp_name_sub}-val-scores-ignore-channel-0-->{opt.record_name}", str(logs), global_step=test_best_epoch)
 
 
 
     # Testing with only class layer 0 (BG)
-
+'''
     loss = smp.utils.losses.DiceLoss(ignore_channels=[1])
     metrics = [
         #smp.utils.metrics.IoU(threshold=0.5),
@@ -542,9 +581,22 @@ def check_val_full_score(opt):
 
     logs = test_epoch.run(test_dataloader)
     print("logs=", str(logs))
-    writer.add_text(f"{opt.exp_name}-val-scores-ignore-channel-1-->{opt.record_name}", str(logs), global_step=test_best_epoch) 
+    opt.writer.add_text(f"{opt.exp_name_sub}-val-scores-ignore-channel-1-->{opt.record_name}", str(logs), global_step=test_best_epoch) 
+'''
 
+def check_val_full_score_multi(opt):
 
+    for train_amount in opt.train_amounts:
+
+        opt.train_amount = int(train_amount)
+
+        print("train amount =", opt.train_amount)
+
+        opt.exp_name_sub = "{}_{}".format(str(opt.exp_name), train_amount)   
+
+        init_experiment(opt)
+
+        check_val_full_score(opt)
 
 
 
@@ -558,6 +610,11 @@ if __name__ == "__main__":
     if opt.action == "train":
         print("Training process is strted..!")
         run_train(opt)
+        pass
+
+    elif opt.action == "train_multi":
+        print("Trainin multiple experiments")
+        run_train_multi(opt)
         pass
 
     elif opt.action == "retrain":
@@ -577,6 +634,9 @@ if __name__ == "__main__":
     elif opt.action == "check_val":
         check_val_full_score(opt)
 
+    elif opt.action == "check_val_multi":
+        check_val_full_score_multi(opt)
+
     # Finish tensorboard writer
-    writer.close()
+    opt.writer.close()
 

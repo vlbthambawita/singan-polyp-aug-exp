@@ -133,6 +133,48 @@ def prepare_data(opt, preprocessing_fn):
 
     return train_loader, valid_loader
 
+def prepare_data_multi(opt, preprocessing_fn):
+
+
+    
+    train_df = df_from_csv_file_array(opt.train_CSVs)
+    val_df = df_from_csv_file_array(opt.val_CSVs)
+
+    train_df = train_df[:opt.train_amount]
+
+    #print(list(train_df["image_path"]))
+
+
+    train_dataset = Dataset(
+        train_df,
+        grid_sizes=opt.grid_sizes_train,
+        augmentation=get_training_augmentation(opt), 
+        preprocessing=get_preprocessing(preprocessing_fn),
+        classes=opt.classes,
+        pyra = opt.pyra
+    )
+
+    valid_dataset = Dataset(
+        val_df, 
+        grid_sizes=opt.grid_sizes_val,
+        augmentation=get_validation_augmentation(opt), 
+        preprocessing=get_preprocessing(preprocessing_fn),
+        classes=opt.classes,
+        pyra = opt.pyra
+    )
+
+    train_loader = DataLoader(train_dataset, batch_size=opt.bs, shuffle=True, num_workers=12)
+    valid_loader = DataLoader(valid_dataset, batch_size=opt.val_bs, shuffle=False, num_workers=4)
+
+    
+   
+    print("dataset train=", len(train_dataset))
+    print("dataset val=", len(valid_dataset))
+
+    return train_loader, valid_loader
+
+
+
 def prepare_test_data(opt, preprocessing_fn):
 
     test_df = df_from_csv_file_array(opt.test_CSVs)
