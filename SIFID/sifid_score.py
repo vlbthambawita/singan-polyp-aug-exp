@@ -30,6 +30,7 @@ import torch
 from scipy import linalg
 #from scipy.misc import imread
 from matplotlib.pyplot import imread
+from PIL import Image
 from torch.nn.functional import adaptive_avg_pool2d
 
 try:
@@ -48,7 +49,8 @@ parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
 parser.add_argument('--path2real', type=str, help=('Path to the real images'))
 parser.add_argument('--path2fake', type=str, help=('Path to generated images'))
 parser.add_argument('-c', '--gpu', default='', type=str, help='GPU to use (leave blank for CPU only)')
-parser.add_argument('--images_suffix', default='jpg', type=str, help='image file suffix')
+parser.add_argument('--images_suffix_path1', default='jpg', type=str, help='image file suffix')
+parser.add_argument('--images_suffix_path2', default='png', type=str, help='image file suffix')
 
 
 def get_activations(files, model, batch_size=1, dims=64,
@@ -94,8 +96,14 @@ def get_activations(files, model, batch_size=1, dims=64,
         start = i * batch_size
         end = start + batch_size
 
-        images = np.array([imread(str(f)).astype(np.float32)
+        ## -- Commented by Vajira and added PIL-Image open function to handle both jpg and png
+        #images = np.array([imread(str(f)).astype(np.float32)
+        #                   for f in files[start:end]])
+
+        images = np.array([np.array(Image.open(str(f))).astype(np.float32)
                            for f in files[start:end]])
+
+        print("this is OK")
 
         images = images[:,:,:,0:3]
         # Reshape to (n_images, 3, height, width)
@@ -202,6 +210,9 @@ def calculate_activation_statistics(files, model, batch_size=1,
     act = get_activations(files, model, batch_size, dims, cuda, verbose)
     mu = np.mean(act, axis=0)
     sigma = np.cov(act, rowvar=False)
+
+    print("mu=", mu)
+    print("sigma=", sigma)
     return mu, sigma
 
 
@@ -219,7 +230,7 @@ def _compute_statistics_of_path(files, model, batch_size, dims, cuda):
     return m, s
 
 
-def calculate_sifid_given_paths(path1, path2, batch_size, cuda, dims, suffix):
+def calculate_sifid_given_paths(path1, path2, batch_size, cuda, dims, suffix_path1, suffix_path2): # modified by Vajira
     """Calculates the SIFID of two paths"""
 
     block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[dims]
@@ -229,10 +240,10 @@ def calculate_sifid_given_paths(path1, path2, batch_size, cuda, dims, suffix):
         model.cuda()
 
     path1 = pathlib.Path(path1)
-    files1 = list(path1.glob('*.%s' %suffix))
+    files1 = list(path1.glob('*.%s' %suffix_path1))
 
     path2 = pathlib.Path(path2)
-    files2 = list(path2.glob('*.%s' %suffix))
+    files2 = list(path2.glob('*.%s' %suffix_path2))
 
     fid_values = []
     Im_ind = []
@@ -253,9 +264,12 @@ if __name__ == '__main__':
 
     path1 = args.path2real
     path2 = args.path2fake
-    suffix = args.images_suffix
+    suffix_path1 = args.images_suffix_path1
+    suffix_path2 = args.images_suffix_path2
 
-    sifid_values = calculate_sifid_given_paths(path1,path2,1,args.gpu!='',64,suffix)
+    sifid_values = calculate_sifid_given_paths(path1,path2,1,args.gpu!='',64,suffix_path1, suffix_path2)
+
+    print(sifid_values)
 
     sifid_values = np.asarray(sifid_values,dtype=np.float32)
     numpy.save('SIFID', sifid_values)
