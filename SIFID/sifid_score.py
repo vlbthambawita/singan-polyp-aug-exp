@@ -50,7 +50,7 @@ parser.add_argument('--path2real', type=str, help=('Path to the real images'))
 parser.add_argument('--path2fake', type=str, help=('Path to generated images'))
 parser.add_argument('-c', '--gpu', default='', type=str, help='GPU to use (leave blank for CPU only)')
 parser.add_argument('--images_suffix_path1', default='jpg', type=str, help='image file suffix')
-parser.add_argument('--images_suffix_path2', default='png', type=str, help='image file suffix')
+parser.add_argument('--images_suffix_path2', default='jpg', type=str, help='image file suffix')
 
 
 def get_activations(files, model, batch_size=1, dims=64,
@@ -103,7 +103,7 @@ def get_activations(files, model, batch_size=1, dims=64,
         images = np.array([np.array(Image.open(str(f))).astype(np.float32)
                            for f in files[start:end]])
 
-        print("this is OK")
+       # print("this is OK")
 
         images = images[:,:,:,0:3]
         # Reshape to (n_images, 3, height, width)
@@ -211,8 +211,8 @@ def calculate_activation_statistics(files, model, batch_size=1,
     mu = np.mean(act, axis=0)
     sigma = np.cov(act, rowvar=False)
 
-    print("mu=", mu)
-    print("sigma=", sigma)
+    #print("mu=", mu)
+    #print("sigma=", sigma)
     return mu, sigma
 
 
@@ -235,7 +235,7 @@ def calculate_sifid_given_paths(path1, path2, batch_size, cuda, dims, suffix_pat
 
     block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[dims]
 
-    model = InceptionV3([block_idx])
+    model = InceptionV3([block_idx], resize_input=True) # updated by Vajria- resize_input=False to True.
     if cuda:
         model.cuda()
 
@@ -269,7 +269,7 @@ if __name__ == '__main__':
 
     sifid_values = calculate_sifid_given_paths(path1,path2,1,args.gpu!='',64,suffix_path1, suffix_path2)
 
-    print(sifid_values)
+    #print(sifid_values)
 
     sifid_values = np.asarray(sifid_values,dtype=np.float32)
     numpy.save('SIFID', sifid_values)

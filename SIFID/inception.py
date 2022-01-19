@@ -129,7 +129,8 @@ class InceptionV3(nn.Module):
         x = inp
 
         if self.resize_input:
-            x = F.upsample(x,
+           # x = F.upsample(x,
+            x = F.interpolate(x,
                               size=(299, 299),
                               mode='bilinear',
                               align_corners=False)
